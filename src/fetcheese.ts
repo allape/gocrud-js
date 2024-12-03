@@ -1,4 +1,18 @@
+export type Headers = Record<string, string>;
+
+export function parseURL(url: string): [URL, Headers] {
+  const u = new URL(url);
+  const headers: Headers = {};
+  if (u.username) {
+    headers["Authorization"] = `Basic ${btoa(`${u.username}:${u.password}`)}`;
+    u.username = "";
+    u.password = "";
+  }
+  return [u, headers];
+}
+
 export interface IRequestConfig<T = unknown, D = T> extends RequestInit {
+  enableBasicAuth?: boolean;
   onHeadersReceived?: (res: Response) => Promise<void> | void;
   onDataReceived?: (data: T) => Promise<D> | D;
   onError?: (e: unknown | Error) => Promise<D> | D;
@@ -10,9 +24,22 @@ export async function fetcheese<
   C extends IRequestConfig<T, D> = IRequestConfig<T, D>,
 >(url: string, config?: C): Promise<D> {
   try {
-    const res = await fetch(url, config);
+    const [u, headers] = config?.enableBasicAuth
+      ? parseURL(url)
+      : [new URL(url), {}];
+
+    const res = await fetch(u, {
+      ...config,
+      headers: {
+        ...headers,
+        ...config?.headers,
+      },
+    });
+
     config?.onHeadersReceived?.(res);
+
     const data = await res.json();
+
     return config?.onDataReceived ? await config.onDataReceived(data) : data;
   } catch (e) {
     if (config?.onError) {

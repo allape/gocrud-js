@@ -14,6 +14,7 @@ export async function get<
   C extends IRequestConfig<IResponse<T>, T> = IRequestConfig<IResponse<T>, T>,
 >(url: string, config?: C): Promise<T> {
   return await fetcheese<IResponse<T>, T>(url, {
+    enableBasicAuth: true,
     onDataReceived: (data: IResponse<T>): T => {
       if (data.c !== "0") {
         throw data;
