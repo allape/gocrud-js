@@ -1,14 +1,22 @@
 export type Headers = Record<string, string>;
+export type URLString = ReturnType<URL["toString"]>;
 
-export function parseURL(url: string): [URL, Headers] {
+export function parseURL(url: string): [URLString, Headers] {
+  // noinspection HttpUrlsUsage
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return [url, {}];
+  }
+
   const u = new URL(url);
   const headers: Headers = {};
+
   if (u.username) {
     headers["Authorization"] = `Basic ${btoa(`${u.username}:${u.password}`)}`;
     u.username = "";
     u.password = "";
   }
-  return [u, headers];
+
+  return [u.toString(), headers];
 }
 
 export interface IRequestConfig<T = unknown, D = T> extends RequestInit {
@@ -24,9 +32,7 @@ export async function fetcheese<
   C extends IRequestConfig<T, D> = IRequestConfig<T, D>,
 >(url: string, config?: C): Promise<D> {
   try {
-    const [u, headers] = config?.enableBasicAuth
-      ? parseURL(url)
-      : [new URL(url), {}];
+    const [u, headers] = config?.enableBasicAuth ? parseURL(url) : [url, {}];
 
     const res = await fetch(u, {
       ...config,
