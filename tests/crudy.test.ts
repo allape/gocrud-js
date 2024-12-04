@@ -1,12 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
 import Crudy from "../src/index";
+import { BaseSearchParams, IBase, IBaseSearchParams } from "../src/model";
 
-interface IUser {
-  id: number;
+interface IUser extends IBase {
   name: string;
-  deleted: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 describe("test crudy", () => {
@@ -25,7 +22,7 @@ describe("test crudy", () => {
     });
     expect(u2.id).toBe(2);
     expect(u2.name).toBe("user2");
-    expect(u2.deleted).toBe(false);
+    expect(u2.deletedAt).toBe(null);
 
     const all = await crudy.all();
     expect(all.length).toBe(2);
@@ -38,9 +35,9 @@ describe("test crudy", () => {
     expect(deleted).toBe(true);
 
     const deletedAgain = await crudy.delete(1);
-    expect(deletedAgain).toBe(false);
+    expect(deletedAgain).toBe(true);
 
-    const count = await crudy.count<Partial<IUser>>({ deleted: false });
+    const count = await crudy.count<IBaseSearchParams>(BaseSearchParams);
     expect(count).toBe(1);
 
     const one = await crudy.one(2);
