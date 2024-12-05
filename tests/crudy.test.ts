@@ -1,6 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import Crudy from "../src/index";
-import { BaseSearchParams, IBase, IBaseSearchParams } from "../src/model";
+import Crudy, { BaseSearchParams, IBase, IBaseSearchParams } from "../";
 
 interface IUser extends IBase {
   name: string;

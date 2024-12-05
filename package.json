@@ -1,7 +1,8 @@
 {
   "name": "@allape/gocrud",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "JavaScript for GoCRUD",
+  "main": "index.ts",
   "scripts": {
     "build": "tsc"
   },
@@ -23,7 +24,6 @@
     "@eslint/js": "^9.13.0",
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.13",
-    "antd": "^5.21.4",
     "eslint": "^9.13.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.11.0",

@@ -1,5 +1,5 @@
 import { describe, test } from "@jest/globals";
-import { sha256ToHex } from "../src/hash";
+import { sha256ToHex } from "../";
 
 describe("test upload", () => {
   test("sha256", async () => {
