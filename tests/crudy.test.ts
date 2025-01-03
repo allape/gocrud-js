@@ -5,6 +5,11 @@ interface IUser extends IBase {
   name: string;
 }
 
+global.confirm = function confirm(msg?: string) {
+  console.error(msg);
+  return false;
+}
+
 describe("test crudy", () => {
   const crudy = new Crudy<IUser>("http://localhost:8080/user");
   test("dry run", async () => {

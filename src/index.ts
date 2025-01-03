@@ -75,7 +75,7 @@ export default class Crudy<T> {
   }
 
   async one(id: string | number): Promise<T> {
-    return this.getty<T>(`${this.baseUrl}?id=${id}`);
+    return this.getty<T>(`${this.baseUrl}/one/${id}`);
   }
 
   async page<KEYWORDS = object>(
@@ -84,7 +84,7 @@ export default class Crudy<T> {
     keywords?: KEYWORDS,
   ): Promise<T[]> {
     return this.getty<T[]>(
-      `${this.baseUrl}/${page}/${size}${Crudy.KeywordsStringify(keywords)}`,
+      `${this.baseUrl}/page/${page}/${size}${Crudy.KeywordsStringify(keywords)}`,
     );
   }
 
@@ -102,7 +102,7 @@ export default class Crudy<T> {
   }
 
   async delete(id: string | number): Promise<boolean> {
-    return this.getty<boolean>(`${this.baseUrl}?id=${id}`, {
+    return this.getty<boolean>(`${this.baseUrl}/${id}`, {
       method: "DELETE",
     });
   }
