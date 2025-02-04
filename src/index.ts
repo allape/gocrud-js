@@ -43,8 +43,10 @@ export function upload(
   url: string,
   file: File | Blob,
   getty: GetFunc = get,
+  config?: IRequestConfig<IResponse<string>, string>,
 ): Promise<string> {
   return getty<string>(url, {
+    ...config,
     method: "POST",
     body: file,
   });
