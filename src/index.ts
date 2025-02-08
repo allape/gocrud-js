@@ -1,4 +1,6 @@
+import i18next from "i18next";
 import { fetcheese, IRequestConfig, stringify } from "./fetcheese";
+import Default from "./i18n";
 
 export type Code = string;
 export type Message = string;
@@ -22,7 +24,11 @@ export async function get<
       return data.d;
     },
     onError: async (e: unknown | Error): Promise<T> => {
-      if (confirm(`${stringify(e)} | Retry?`)) {
+      if (
+        confirm(
+          `${stringify(e)} | ${i18next.t("gocrud.retryQuestionMark") || Default.gocrud.retryQuestionMark}`,
+        )
+      ) {
         return get(url, config);
       } else {
         throw e;
