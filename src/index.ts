@@ -25,7 +25,7 @@ export async function get<
     onError: async (e: unknown | Error): Promise<T> => {
       if (
         confirm(
-          `${stringify(e)} | ${ot("gocrud.retryQuestionMark", undefined, Default.gocrud.retryQuestionMark)}`,
+          `${stringify(e)} | ${ot("gocrud.retryQuestionMark", Default.gocrud.retryQuestionMark)}`,
         )
       ) {
         return get(url, config);
@@ -75,42 +75,63 @@ export default class Crudy<T> {
     return `?${new URLSearchParams(keywords)}`;
   }
 
-  async all<KEYWORDS = object>(keywords?: KEYWORDS): Promise<T[]> {
+  async all<KEYWORDS = object>(
+    keywords?: KEYWORDS,
+    config?: IRequestConfig<IResponse<T[]>, T[]>,
+  ): Promise<T[]> {
     return this.getty<T[]>(
       `${this.baseUrl}/all${Crudy.KeywordsStringify(keywords)}`,
+      config,
     );
   }
 
-  async one(id: string | number): Promise<T> {
-    return this.getty<T>(`${this.baseUrl}/one/${id}`);
+  async one(
+    id: string | number,
+    config?: IRequestConfig<IResponse<T>, T>,
+  ): Promise<T> {
+    return this.getty<T>(`${this.baseUrl}/one/${id}`, config);
   }
 
   async page<KEYWORDS = object>(
     page: number,
     size: number,
     keywords?: KEYWORDS,
+    config?: IRequestConfig<IResponse<T[]>, T[]>,
   ): Promise<T[]> {
     return this.getty<T[]>(
       `${this.baseUrl}/page/${page}/${size}${Crudy.KeywordsStringify(keywords)}`,
+      config,
     );
   }
 
-  async count<KEYWORDS = object>(keywords?: KEYWORDS): Promise<number> {
+  async count<KEYWORDS = object>(
+    keywords?: KEYWORDS,
+    config?: IRequestConfig<IResponse<number>, number>,
+  ): Promise<number> {
     return this.getty<number>(
       `${this.baseUrl}/count${Crudy.KeywordsStringify(keywords)}`,
+      config,
     );
   }
 
-  async save(data: Partial<T>): Promise<T> {
+  async save(
+    data: Partial<T>,
+    config?: IRequestConfig<IResponse<T>, T>,
+  ): Promise<T> {
     return this.getty<T>(this.baseUrl, {
       method: "PUT",
       body: JSON.stringify(data),
+      ...config,
     });
   }
 
-  async delete(id: string | number): Promise<boolean> {
+  async delete(
+    id: string | number,
+    config?: IRequestConfig<IResponse<boolean>, boolean>,
+  ): Promise<boolean> {
     return this.getty<boolean>(`${this.baseUrl}/${id}`, {
       method: "DELETE",
+      ...config,
     });
   }
 }
