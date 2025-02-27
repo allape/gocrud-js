@@ -44,6 +44,8 @@ export async function get<
 
 export type GetFunc = typeof get;
 
+export const XFileDigestHeader = "X-File-Digest"
+
 export function upload(
   url: string,
   file: File | Blob,
