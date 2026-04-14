@@ -1,5 +1,10 @@
 import { describe, expect, test } from "@jest/globals";
-import Crudy, { BaseSearchParams, IBase, IBaseSearchParams } from "../";
+import Crudy, {
+  BaseSearchParams,
+  IBase,
+  IBaseSearchParams,
+  ITimeSortSearchParams,
+} from "../";
 
 interface IUser extends IBase {
   name: string;
@@ -8,7 +13,7 @@ interface IUser extends IBase {
 global.confirm = function confirm(msg?: string) {
   console.error(msg);
   return false;
-}
+};
 
 describe("test crudy", () => {
   const crudy = new Crudy<IUser>("http://localhost:8080/user");
@@ -41,7 +46,9 @@ describe("test crudy", () => {
     const deletedAgain = await crudy.delete(1);
     expect(deletedAgain).toBe(true);
 
-    const count = await crudy.count<IBaseSearchParams>(BaseSearchParams);
+    const count = await crudy.count<IBaseSearchParams & ITimeSortSearchParams>(
+      BaseSearchParams,
+    );
     expect(count).toBe(1);
 
     const one = await crudy.one(2);
