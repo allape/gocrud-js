@@ -37,6 +37,7 @@ export async function fetcheese<
     const res = await fetch(u, {
       ...config,
       headers: {
+        Accept: "application/json; charset=utf-8",
         ...headers,
         ...config?.headers,
       },
