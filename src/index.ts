@@ -103,7 +103,11 @@ export default class Crudy<T> {
         return value.join(",");
       }
 
-      return `${JSON.stringify(value)}`;
+      if (typeof value === "object") {
+        return `${JSON.stringify(value)}`;
+      }
+
+      return `${value}`;
     });
   }
 
