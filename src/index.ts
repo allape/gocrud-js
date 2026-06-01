@@ -94,7 +94,17 @@ export default class Crudy<T> {
       return "{}";
     }
 
-    return JSON.stringify(keywords);
+    return JSON.stringify(keywords, (key, value) => {
+      if (key === "") {
+        return value;
+      }
+
+      if (value instanceof Array) {
+        return value.join(",");
+      }
+
+      return `${JSON.stringify(value)}`;
+    });
   }
 
   /**
