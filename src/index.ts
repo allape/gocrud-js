@@ -1,4 +1,4 @@
-import { fetcheese, IRequestConfig, stringify } from "./fetcheese";
+import { fetcheese, type IRequestConfig } from "./fetcheese";
 import Default, { ot } from "./i18n";
 
 export type Code = string;
@@ -10,49 +10,59 @@ export interface IResponse<Data = unknown> {
   d: Data;
 }
 
-export async function get<
-  T = unknown,
-  C extends IRequestConfig<IResponse<T>, T> = IRequestConfig<IResponse<T>, T>,
->(url: string, config?: C): Promise<T> {
-  return await fetcheese<IResponse<T>, T>(url, {
-    enableBasicAuth: true,
-    onDataReceived: (data: IResponse<T>): T => {
-      if (data.c !== "0") {
-        throw data;
-      }
-      return data.d;
-    },
-    onError: async (e: unknown | Error): Promise<T> => {
-      if (
-        confirm(
-          `${stringify(e)} | ${ot("gocrud.retryQuestionMark", Default.gocrud.retryQuestionMark)}`,
-        )
-      ) {
-        return get(url, config);
-      } else {
-        throw e;
-      }
-    },
-    onHeadersReceived: (res: Response): void => {
-      if (res.status < 200 || res.status >= 300) {
-        throw new Error(res.statusText);
-      }
-    },
-    ...config,
-  });
+export type Config<T = unknown> = IRequestConfig<IResponse<T>, T>;
+
+export type GetFunc = <T = unknown>(
+  url: string,
+  config?: Config<T>,
+) => Promise<T>;
+
+export function newGetFunc<T = unknown>(defaultConfig?: Config<T>): GetFunc {
+  return async <T = unknown>(
+    url: string,
+    config: Config<T> = {},
+  ): Promise<T> => {
+    return await fetcheese<IResponse<T>, T>(url, {
+      ...defaultConfig,
+      enableBasicAuth: true,
+      onDataReceived: (data: IResponse<T>): T => {
+        if (data.c !== "0") {
+          throw data;
+        }
+        return data.d;
+      },
+      onError: async (e: unknown | Error, message: string): Promise<T> => {
+        if (
+          confirm(
+            `${message} | ${ot("gocrud.retryQuestionMark", Default.gocrud.retryQuestionMark, config.tFunc)}`,
+          )
+        ) {
+          return get(url, config);
+        } else {
+          throw e;
+        }
+      },
+      onHeadersReceived: (res: Response): void => {
+        if (res.status < 200 || res.status >= 300) {
+          throw new Error(res.statusText);
+        }
+      },
+      ...config,
+    });
+  };
 }
 
-export type GetFunc = typeof get;
+export const get = newGetFunc();
 
-export const XFileDigestHeader = "X-File-Digest"
+export const XFileDigestHeader = "X-File-Digest";
 
 export function upload(
   url: string,
   file: File | Blob,
-  getty: GetFunc = get,
-  config?: IRequestConfig<IResponse<string>, string>,
+  getFunc: GetFunc = get,
+  config?: Config<string>,
 ): Promise<string> {
-  return getty<string>(url, {
+  return getFunc<string>(url, {
     ...config,
     method: "POST",
     body: file,
@@ -62,10 +72,12 @@ export function upload(
 export default class Crudy<T> {
   constructor(
     public readonly baseUrl: string,
-    private readonly getty: GetFunc = get,
+    private readonly getFunc: GetFunc = get,
   ) {}
 
-  static KeywordsStringify<KEYWORDS = object>(keywords?: KEYWORDS): string {
+  static QuerySearchKeywordsStringify<KEYWORDS = object>(
+    keywords?: KEYWORDS,
+  ): string {
     if (!keywords) {
       return "";
     }
@@ -77,50 +89,96 @@ export default class Crudy<T> {
     return `?${new URLSearchParams(keywords)}`;
   }
 
-  async all<KEYWORDS = object>(
+  static BodyKeywordsStringify<KEYWORDS = object>(keywords?: KEYWORDS): string {
+    if (!keywords) {
+      return "{}";
+    }
+
+    return JSON.stringify(keywords);
+  }
+
+  /**
+   * @deprecated use {@link all} instead
+   */
+  async _all<KEYWORDS = object>(
     keywords?: KEYWORDS,
-    config?: IRequestConfig<IResponse<T[]>, T[]>,
+    config?: Config<T[]>,
   ): Promise<T[]> {
-    return this.getty<T[]>(
-      `${this.baseUrl}/all${Crudy.KeywordsStringify(keywords)}`,
+    return this.getFunc<T[]>(
+      `${this.baseUrl}/all${Crudy.QuerySearchKeywordsStringify<KEYWORDS>(keywords)}`,
       config,
     );
   }
 
-  async one(
-    id: string | number,
-    config?: IRequestConfig<IResponse<T>, T>,
-  ): Promise<T> {
-    return this.getty<T>(`${this.baseUrl}/one/${id}`, config);
+  async all<KEYWORDS = object>(
+    keywords?: KEYWORDS,
+    config?: Config<T[]>,
+  ): Promise<T[]> {
+    return this.getFunc<T[]>(`${this.baseUrl}/all`, {
+      ...config,
+      method: "POST",
+      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+    });
+  }
+
+  async one(id: string | number, config?: Config<T>): Promise<T> {
+    return this.getFunc<T>(`${this.baseUrl}/one/${id}`, config);
+  }
+
+  /**
+   * @deprecated use {@link page} instead
+   */
+  async _page<KEYWORDS = object>(
+    page: number,
+    size: number,
+    keywords?: KEYWORDS,
+    config?: Config<T[]>,
+  ): Promise<T[]> {
+    return this.getFunc<T[]>(
+      `${this.baseUrl}/page/${page}/${size}${Crudy.QuerySearchKeywordsStringify(keywords)}`,
+      config,
+    );
   }
 
   async page<KEYWORDS = object>(
     page: number,
     size: number,
     keywords?: KEYWORDS,
-    config?: IRequestConfig<IResponse<T[]>, T[]>,
+    config?: Config<T[]>,
   ): Promise<T[]> {
-    return this.getty<T[]>(
-      `${this.baseUrl}/page/${page}/${size}${Crudy.KeywordsStringify(keywords)}`,
+    return this.getFunc<T[]>(`${this.baseUrl}/page/${page}/${size}`, {
+      ...config,
+      method: "POST",
+      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+    });
+  }
+
+  /**
+   * @deprecated use {@link count} instead
+   */
+  async _count<KEYWORDS = object>(
+    keywords?: KEYWORDS,
+    config?: Config<number>,
+  ): Promise<number> {
+    return this.getFunc<number>(
+      `${this.baseUrl}/count${Crudy.QuerySearchKeywordsStringify(keywords)}`,
       config,
     );
   }
 
   async count<KEYWORDS = object>(
     keywords?: KEYWORDS,
-    config?: IRequestConfig<IResponse<number>, number>,
+    config?: Config<number>,
   ): Promise<number> {
-    return this.getty<number>(
-      `${this.baseUrl}/count${Crudy.KeywordsStringify(keywords)}`,
-      config,
-    );
+    return this.getFunc<number>(`${this.baseUrl}/count`, {
+      ...config,
+      method: "POST",
+      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+    });
   }
 
-  async save(
-    data: Partial<T>,
-    config?: IRequestConfig<IResponse<T>, T>,
-  ): Promise<T> {
-    return this.getty<T>(this.baseUrl, {
+  async save(data: Partial<T>, config?: Config<T>): Promise<T> {
+    return this.getFunc<T>(this.baseUrl, {
       method: "PUT",
       body: JSON.stringify(data),
       ...config,
@@ -129,9 +187,9 @@ export default class Crudy<T> {
 
   async delete(
     id: string | number,
-    config?: IRequestConfig<IResponse<boolean>, boolean>,
+    config?: Config<boolean>,
   ): Promise<boolean> {
-    return this.getty<boolean>(`${this.baseUrl}/${id}`, {
+    return this.getFunc<boolean>(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       ...config,
     });

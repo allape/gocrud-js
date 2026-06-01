@@ -1,3 +1,5 @@
+import { TFunction } from "i18next";
+
 export type Headers = Record<string, string>;
 export type URLString = ReturnType<URL["toString"]>;
 
@@ -19,38 +21,51 @@ export function parseURL(url: string): [URLString, Headers] {
   return [u.toString(), headers];
 }
 
-export interface IRequestConfig<T = unknown, D = T> extends RequestInit {
-  enableBasicAuth?: boolean;
-  onHeadersReceived?: (res: Response) => Promise<void> | void;
-  onDataReceived?: (data: T) => Promise<D> | D;
-  onError?: (e: unknown | Error) => Promise<D> | D;
+export interface IErrorHandler<T = unknown, D = T> {
+  retriedCount?: number;
+  onError?: (e: unknown | Error, parsedMessage: string) => Promise<D> | D;
+  errorMessageTranslator?: (errorMessage: string) => string | Promise<string>;
 }
 
-export async function fetcheese<
-  T = unknown,
-  D = T,
-  C extends IRequestConfig<T, D> = IRequestConfig<T, D>,
->(url: string, config?: C): Promise<D> {
+export interface IRequestConfig<T = unknown, D = T>
+  extends RequestInit, IErrorHandler<T, D> {
+  enableBasicAuth?: boolean;
+  tFunc?: TFunction;
+  onHeadersReceived?: (res: Response) => Promise<void> | void;
+  onDataReceived?: (data: T) => Promise<D> | D;
+}
+
+export async function fetcheese<T = unknown, D = T>(
+  url: string,
+  config: IRequestConfig<T, D> = {},
+): Promise<D> {
   try {
-    const [u, headers] = config?.enableBasicAuth ? parseURL(url) : [url, {}];
+    const [u, headers] = config.enableBasicAuth ? parseURL(url) : [url, {}];
 
     const res = await fetch(u, {
       ...config,
       headers: {
         Accept: "application/json; charset=utf-8",
         ...headers,
-        ...config?.headers,
+        ...config.headers,
       },
     });
 
-    config?.onHeadersReceived?.(res);
+    config.onHeadersReceived?.(res);
 
-    const data = await res.json();
+    const data: T = await res.json();
 
-    return config?.onDataReceived ? await config.onDataReceived(data) : data;
+    return config.onDataReceived
+      ? await config.onDataReceived(data)
+      : (data as unknown as D);
   } catch (e) {
-    if (config?.onError) {
-      return config.onError(e);
+    config.retriedCount = (config?.retriedCount || 0) + 1;
+    if (config.onError) {
+      let errorMessage = stringify(e);
+      errorMessage = config.errorMessageTranslator
+        ? await config.errorMessageTranslator(errorMessage)
+        : errorMessage;
+      return config.onError(e, errorMessage);
     }
     throw e;
   }
