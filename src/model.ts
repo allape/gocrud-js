@@ -1,11 +1,15 @@
+export type ID = number;
+
 export interface IBase {
-  id: number;
+  id: ID;
+  priority: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
 }
 
 export interface IBaseSearchParams {
+  in_id?: ID[];
   deleted?: boolean;
 }
 
@@ -19,4 +23,6 @@ export interface ITimeSortSearchParams {
   orderBy_createdAt?: SortType;
   orderBy_updatedAt?: SortType;
   orderBy_deletedAt?: SortType;
+  orderBy_priority?: SortType;
+  sortByPriorityThenUpdatedAt?: boolean;
 }
