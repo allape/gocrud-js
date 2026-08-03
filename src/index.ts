@@ -1,5 +1,6 @@
 import { fetcheese, type IRequestConfig } from "./fetcheese";
 import Default, { ot } from "./i18n";
+import { IBase, IBaseSearchParams, ID } from "./model";
 
 export type Code = string;
 export type Message = string;
@@ -69,32 +70,37 @@ export function upload(
   });
 }
 
-export default class Crudy<T> {
+export default class Crudy<
+  T extends IBase,
+  SearchParams extends IBaseSearchParams = IBaseSearchParams,
+> {
   constructor(
     public readonly baseUrl: string,
     private readonly getFunc: GetFunc = get,
   ) {}
 
-  static QuerySearchKeywordsStringify<KEYWORDS = object>(
-    keywords?: KEYWORDS,
+  static QuerySearchSearchParamsStringify<SearchParams = object>(
+    searchParams?: SearchParams,
   ): string {
-    if (!keywords) {
+    if (!searchParams) {
       return "";
     }
-    Object.entries(keywords).forEach(([key, value]) => {
+    Object.entries(searchParams).forEach(([key, value]) => {
       if (value === undefined) {
-        delete (keywords as Record<string, unknown>)[key];
+        delete (searchParams as Record<string, unknown>)[key];
       }
     });
-    return `?${new URLSearchParams(keywords)}`;
+    return `?${new URLSearchParams(searchParams)}`;
   }
 
-  static BodyKeywordsStringify<KEYWORDS = object>(keywords?: KEYWORDS): string {
-    if (!keywords) {
+  static BodySearchParamsStringify<SearchParams = object>(
+    searchParams?: SearchParams,
+  ): string {
+    if (!searchParams) {
       return "{}";
     }
 
-    return JSON.stringify(keywords, (key, value) => {
+    return JSON.stringify(searchParams, (key, value) => {
       if (key === "") {
         return value;
       }
@@ -114,24 +120,18 @@ export default class Crudy<T> {
   /**
    * @deprecated use {@link all} instead
    */
-  async _all<KEYWORDS = object>(
-    keywords?: KEYWORDS,
-    config?: Config<T[]>,
-  ): Promise<T[]> {
+  async _all(searchParams?: SearchParams, config?: Config<T[]>): Promise<T[]> {
     return this.getFunc<T[]>(
-      `${this.baseUrl}/all${Crudy.QuerySearchKeywordsStringify<KEYWORDS>(keywords)}`,
+      `${this.baseUrl}/all${Crudy.QuerySearchSearchParamsStringify<SearchParams>(searchParams)}`,
       config,
     );
   }
 
-  async all<KEYWORDS = object>(
-    keywords?: KEYWORDS,
-    config?: Config<T[]>,
-  ): Promise<T[]> {
+  async all(searchParams?: SearchParams, config?: Config<T[]>): Promise<T[]> {
     return this.getFunc<T[]>(`${this.baseUrl}/all`, {
       ...config,
       method: "POST",
-      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+      body: Crudy.BodySearchParamsStringify<SearchParams>(searchParams),
     });
   }
 
@@ -142,52 +142,52 @@ export default class Crudy<T> {
   /**
    * @deprecated use {@link page} instead
    */
-  async _page<KEYWORDS = object>(
+  async _page(
     page: number,
     size: number,
-    keywords?: KEYWORDS,
+    searchParams?: SearchParams,
     config?: Config<T[]>,
   ): Promise<T[]> {
     return this.getFunc<T[]>(
-      `${this.baseUrl}/page/${page}/${size}${Crudy.QuerySearchKeywordsStringify(keywords)}`,
+      `${this.baseUrl}/page/${page}/${size}${Crudy.QuerySearchSearchParamsStringify(searchParams)}`,
       config,
     );
   }
 
-  async page<KEYWORDS = object>(
+  async page(
     page: number,
     size: number,
-    keywords?: KEYWORDS,
+    searchParams?: SearchParams,
     config?: Config<T[]>,
   ): Promise<T[]> {
     return this.getFunc<T[]>(`${this.baseUrl}/page/${page}/${size}`, {
       ...config,
       method: "POST",
-      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+      body: Crudy.BodySearchParamsStringify<SearchParams>(searchParams),
     });
   }
 
   /**
    * @deprecated use {@link count} instead
    */
-  async _count<KEYWORDS = object>(
-    keywords?: KEYWORDS,
+  async _count(
+    searchParams?: SearchParams,
     config?: Config<number>,
   ): Promise<number> {
     return this.getFunc<number>(
-      `${this.baseUrl}/count${Crudy.QuerySearchKeywordsStringify(keywords)}`,
+      `${this.baseUrl}/count${Crudy.QuerySearchSearchParamsStringify(searchParams)}`,
       config,
     );
   }
 
-  async count<KEYWORDS = object>(
-    keywords?: KEYWORDS,
+  async count(
+    searchParams?: SearchParams,
     config?: Config<number>,
   ): Promise<number> {
     return this.getFunc<number>(`${this.baseUrl}/count`, {
       ...config,
       method: "POST",
-      body: Crudy.BodyKeywordsStringify<KEYWORDS>(keywords),
+      body: Crudy.BodySearchParamsStringify<SearchParams>(searchParams),
     });
   }
 
@@ -207,5 +207,149 @@ export default class Crudy<T> {
       method: "DELETE",
       ...config,
     });
+  }
+}
+
+export class M2MConnectorHandler<
+  M1 extends IBase,
+  M2 extends IBase,
+  M2M,
+  SearchParams = object,
+> {
+  constructor(
+    public readonly baseUrl: string,
+    private readonly m1Crudy: Crudy<M1>,
+    private readonly m2Crudy: Crudy<M2>,
+    private readonly m1IdFieldName: keyof M2M,
+    private readonly m2IdFieldName: keyof M2M,
+    private readonly getFunc: GetFunc = get,
+  ) {}
+
+  static GroupByConnector<M2M, T extends IBase>(
+    connectors: M2M[],
+    groupByField: keyof M2M,
+    idField: keyof M2M,
+    records: T[],
+  ): Record<ID, T[]> {
+    const groupedRecords: Record<ID, T[]> = {};
+    connectors.forEach((c) => {
+      const id = c[idField] as ID;
+      const record = records.find((r) => r.id === id);
+      if (!record) {
+        return;
+      }
+
+      const groupByValue = c[groupByField] as ID;
+      if (!groupedRecords[groupByValue]) {
+        groupedRecords[groupByValue] = [];
+      }
+      groupedRecords[groupByValue].push(record);
+    });
+
+    return groupedRecords;
+  }
+
+  async getAll(
+    byField: typeof this.m1IdFieldName | typeof this.m2IdFieldName,
+    ids: M1["id"][] | M2["id"][],
+    searchParams?: SearchParams,
+    config?: Config<M2M[]>,
+  ): Promise<M2M[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.getFunc<M2M[]>(`${this.baseUrl}/all`, {
+      method: "POST",
+      body: Crudy.BodySearchParamsStringify({
+        ...searchParams,
+        [`in_${byField as string}`]: ids.join(","),
+      }),
+      ...config,
+    });
+  }
+
+  async save(
+    records: Partial<M2M>[],
+    config?: Config<number>,
+  ): Promise<number> {
+    return this.getFunc<number>(`${this.baseUrl}/save`, {
+      method: "PUT",
+      body: JSON.stringify(records),
+      ...config,
+    });
+  }
+
+  async saveAfterDelete(
+    deleteByField: keyof M2M,
+    deleteById: M1["id"] | M2["id"],
+    records: Partial<M2M>[],
+    config?: Config<number>,
+  ): Promise<number> {
+    return this.getFunc<number>(
+      `${this.baseUrl}/save/${deleteByField as string}/${deleteById}`,
+      {
+        method: "POST",
+        body: JSON.stringify(records),
+        ...config,
+      },
+    );
+  }
+
+  async delete(
+    m1Id: M1["id"],
+    m2Id: M2["id"],
+    config?: Config<number>,
+  ): Promise<number> {
+    return this.getFunc<number>(
+      `${this.baseUrl}?${this.m1IdFieldName as string}=${m1Id}&${this.m2IdFieldName as string}=${m2Id}`,
+      {
+        method: "DELETE",
+        ...config,
+      },
+    );
+  }
+
+  async get<T extends M1 | M2>(
+    byField: typeof this.m1IdFieldName | typeof this.m2IdFieldName,
+    ids: M1["id"][] | M2["id"][],
+    searchParams?: SearchParams,
+    config?: Pick<Config, "signal">,
+  ): Promise<Record<ID, T[]>> {
+    if (ids.length === 0) {
+      return {} as Record<ID, T[]>;
+    }
+
+    const groupByField = byField;
+    const idField =
+      groupByField === this.m1IdFieldName
+        ? this.m2IdFieldName
+        : this.m1IdFieldName;
+    const crudy =
+      groupByField === this.m1IdFieldName ? this.m2Crudy : this.m1Crudy;
+
+    const connectors = await this.getAll(
+      groupByField,
+      ids,
+      searchParams,
+      config,
+    );
+    if (connectors.length === 0) {
+      return {} as Record<ID, T[]>;
+    }
+
+    const recordIds = Array.from(
+      new Set(connectors.map((c) => c[idField])),
+    ) as ID[];
+    const records = await crudy.all({
+      in_id: recordIds,
+    });
+
+    return M2MConnectorHandler.GroupByConnector<M2M, T>(
+      connectors,
+      groupByField,
+      idField,
+      records as T[],
+    );
   }
 }
