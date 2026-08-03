@@ -76,7 +76,7 @@ export default class Crudy<
 > {
   constructor(
     public readonly baseUrl: string,
-    private readonly getFunc: GetFunc = get,
+    protected readonly getFunc: GetFunc = get,
   ) {}
 
   static QuerySearchSearchParamsStringify<SearchParams = object>(
@@ -218,11 +218,11 @@ export class M2MConnectorHandler<
 > {
   constructor(
     public readonly baseUrl: string,
-    private readonly m1Crudy: Crudy<M1>,
-    private readonly m2Crudy: Crudy<M2>,
-    private readonly m1IdFieldName: keyof M2M,
-    private readonly m2IdFieldName: keyof M2M,
-    private readonly getFunc: GetFunc = get,
+    protected readonly m1Crudy: Crudy<M1>,
+    protected readonly m2Crudy: Crudy<M2>,
+    protected readonly m1IdFieldName: keyof M2M,
+    protected readonly m2IdFieldName: keyof M2M,
+    protected readonly getFunc: GetFunc = get,
   ) {}
 
   static GroupByConnector<M2M, T extends IBase>(
