@@ -58,6 +58,37 @@ describe("test crudy", () => {
     const all = await crudy.all();
     expect(all.length).toBe(2);
 
+    const all1 = await crudy.all({
+      like_name: undefined,
+    });
+    expect(all1.length).toBe(2);
+
+    const all2 = await crudy.all({
+      like_name: null as unknown as string,
+    });
+    expect(all2.length).toBe(2);
+
+    const all3 = await crudy.all({
+      like_name: Number.NaN as unknown as string,
+    });
+    expect(all3.length).toBe(2);
+
+    const all4 = await crudy.all({
+      in_id: [1,2],
+    });
+    expect(all4.length).toBe(2);
+
+    const all5 = await crudy.all({
+      in_id: [2],
+    });
+    expect(all5.length).toBe(1);
+    expect(all5[0].id).toBe(2);
+
+    const all6 = await crudy.all({
+      like_name: "2",
+    });
+    expect(all6.length).toBe(1);
+
     const page = await crudy.page(1, 1);
     expect(page.length).toBe(1);
     expect(page[0].id).toBe(1);

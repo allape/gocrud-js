@@ -105,6 +105,10 @@ export default class Crudy<
         return value;
       }
 
+      if (value === undefined || value === null || Number.isNaN(value)) {
+        return "";
+      }
+
       if (value instanceof Array) {
         return value.join(",");
       }
