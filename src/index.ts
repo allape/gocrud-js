@@ -314,46 +314,93 @@ export class M2MConnectorHandler<
     );
   }
 
-  async get<T extends M1 | M2>(
-    byField: typeof this.m1IdFieldName | typeof this.m2IdFieldName,
-    ids: M1["id"][] | M2["id"][],
+  /**
+   * Example:
+   * ```TypeScript
+   *   const m1s: M1[] = [...];
+   *   await handler.get<M2>("m1Id", m1s, {}, (m1, m2s) => {
+   *     m1._m2s = m2s;
+   *   });
+   * ```
+   * ```TypeScript
+   *   const [connectors, ts, groupedTs] = await handler.get<T>("dId", [1, 2, 3]);
+   * ```
+   * @param byField Search field, opposite of T
+   * @param byDs D or ID, opposite of T when D
+   * @param searchParams Extra search params for M2M connectors
+   * @param forEachHandleFunc Loop over the result, will do nothing if {@link byDs} is {@link ID[]}
+   *
+   * Short for:
+   * ```TypeScript
+   *   const m1s: M1[] = [...];
+   *   const [connectors, m2s, grouped] = await handler.get<M2>("m1Ids", m1s, {});
+   *   Object.entries(grouped).forEach(([m1Id, m2s]) => {
+   *     // do as forEachHandleFunc do
+   *   });
+   * ```
+   * @param config extra network config
+   * @typeParam T The target type to retrieve
+   * @typeParam D The search source
+   * @typeParam ByField The search field type
+   */
+  async get<
+    T extends M1 | M2,
+    D extends IBase = T extends M1 ? M2 : M1,
+    ByField extends typeof this.m1IdFieldName | typeof this.m2IdFieldName =
+      T extends M1 ? typeof this.m2IdFieldName : typeof this.m1IdFieldName,
+  >(
+    byField: ByField,
+    byDs: D[] | ID[],
     searchParams?: SearchParams,
+    forEachHandleFunc?: (d: D, ts: T[]) => void,
     config?: Pick<Config, "signal">,
-  ): Promise<Record<ID, T[]>> {
-    if (ids.length === 0) {
-      return {} as Record<ID, T[]>;
+  ): Promise<[M2M[], T[], Record<ID, T[]>]> {
+    if (byDs.length === 0) {
+      return [[], [], {}];
     }
 
-    const groupByField = byField;
-    const idField =
-      groupByField === this.m1IdFieldName
-        ? this.m2IdFieldName
-        : this.m1IdFieldName;
-    const crudy =
-      groupByField === this.m1IdFieldName ? this.m2Crudy : this.m1Crudy;
+    const isByIds = typeof byDs[0] === "number";
+
+    const idField: ByField = (byField === this.m1IdFieldName
+      ? this.m2IdFieldName
+      : this.m1IdFieldName) as unknown as ByField;
+
+    const crudy: Crudy<T> = (byField === this.m1IdFieldName
+      ? this.m2Crudy
+      : this.m1Crudy) as unknown as Crudy<T>;
 
     const connectors = await this.getAll(
-      groupByField,
-      ids,
+      byField,
+      isByIds ? (byDs as ID[]) : (byDs as D[]).map((i) => i.id),
       searchParams,
       config,
     );
     if (connectors.length === 0) {
-      return {} as Record<ID, T[]>;
+      return [[], [], {}];
     }
 
-    const recordIds = Array.from(
-      new Set(connectors.map((c) => c[idField])),
-    ) as ID[];
-    const records = await crudy.all({
-      in_id: recordIds,
+    const tIds = Array.from(new Set(connectors.map((c) => c[idField]))) as ID[];
+    const ts: T[] = await crudy.all({
+      in_id: tIds,
     });
 
-    return M2MConnectorHandler.GroupByConnector<M2M, T>(
+    const groupedConnectors = M2MConnectorHandler.GroupByConnector<M2M, T>(
       connectors,
-      groupByField,
+      byField,
       idField,
-      records as T[],
+      ts as T[],
     );
+
+    if (forEachHandleFunc && !isByIds) {
+      Object.entries(groupedConnectors).forEach(([id, records]) => {
+        const found = (byDs as D[]).find((i) => i.id === parseInt(id));
+        if (!found) {
+          return;
+        }
+        forEachHandleFunc(found, records);
+      });
+    }
+
+    return [connectors, ts, groupedConnectors];
   }
 }

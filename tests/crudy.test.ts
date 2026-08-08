@@ -9,6 +9,7 @@ import Crudy, {
 interface IUser extends IBase {
   name: string;
   age: number;
+  _tags?: ITag[];
 }
 
 interface IUserSearchParams extends IBaseSearchParams {
@@ -74,7 +75,7 @@ describe("test crudy", () => {
     expect(all3.length).toBe(2);
 
     const all4 = await crudy.all({
-      in_id: [1,2],
+      in_id: [1, 2],
     });
     expect(all4.length).toBe(2);
 
@@ -189,19 +190,35 @@ describe("test m2m connector handler", (): void => {
     console.log(user1Tags);
     expect(user1Tags.length).toBe(3);
 
-    const tag3Users = await userTagConnectorHandler.get<IUser>("tagId", [3]);
+    const [, , tag3Users] = await userTagConnectorHandler.get<IUser>("tagId", [
+      {
+        id: 3,
+      } as IUser,
+    ]);
     console.log(tag3Users);
     expect(Object.keys(tag3Users).length).toBe(1);
     expect(tag3Users[3].length).toBe(2);
 
-    const users = await userTagConnectorHandler.get<ITag>("userId", [1]);
+    const [, , users] = await userTagConnectorHandler.get<ITag>("userId", [1]);
     expect(Object.keys(users).length).toBe(1);
     expect(users[1].length).toBe(3);
 
-    const tags = await userTagConnectorHandler.get<ITag>("userId", [1, 2]);
+    const allUsers = await userCrudy.all();
+    expect(allUsers.length).toBe(2);
+
+    const [, , tags] = await userTagConnectorHandler.get<ITag>(
+      "userId",
+      allUsers,
+      {},
+      (user, tags) => {
+        user._tags = tags;
+      },
+    );
     expect(Object.keys(tags).length).toBe(2);
     expect(tags[1].length).toBe(3);
     expect(tags[2].length).toBe(3);
+    expect(allUsers[0]._tags?.length).toBe(3);
+    expect(allUsers[1]._tags?.length).toBe(3);
 
     const count3 = await userTagConnectorHandler.delete(1, 1);
     expect(count3).toBe(1);
