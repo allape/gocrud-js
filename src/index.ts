@@ -352,7 +352,7 @@ export class M2MConnectorHandler<
     byField: ByField,
     byDs: D[] | ID[],
     searchParams?: SearchParams,
-    forEachHandleFunc?: (d: D, ts: T[]) => void,
+    forEachHandleFunc?: (d: D, ts: T[], connectors: M2M[]) => void,
     config?: Pick<Config, "signal">,
   ): Promise<[M2M[], T[], Record<ID, T[]>]> {
     if (byDs.length === 0) {
@@ -397,7 +397,11 @@ export class M2MConnectorHandler<
         if (!found) {
           return;
         }
-        forEachHandleFunc(found, records);
+        forEachHandleFunc(
+          found,
+          records,
+          connectors.filter((c) => c[byField] === found.id),
+        );
       });
     }
 

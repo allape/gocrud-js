@@ -210,8 +210,10 @@ describe("test m2m connector handler", (): void => {
       "userId",
       allUsers,
       {},
-      (user, tags) => {
+      (user, tags, userTags) => {
         user._tags = tags;
+
+        expect(tags.length).toBe(userTags.length);
       },
     );
     expect(Object.keys(tags).length).toBe(2);
