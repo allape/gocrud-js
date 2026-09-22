@@ -105,14 +105,16 @@ export default class Crudy<
         return value;
       }
 
+      // ignore all kinds of this value
       if (value === undefined || value === null || Number.isNaN(value)) {
-        return "";
+        return undefined;
       }
 
       if (value instanceof Array) {
         return value.join(",");
       }
 
+      // only one depth
       if (typeof value === "object") {
         return `${JSON.stringify(value)}`;
       }
