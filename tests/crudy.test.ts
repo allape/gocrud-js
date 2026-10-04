@@ -31,11 +31,6 @@ interface IUserTag extends Pick<IBase, "createdAt"> {
   tagId: ITag["id"];
 }
 
-global.confirm = function confirm(msg?: string) {
-  console.error(msg);
-  return false;
-};
-
 describe("test crudy", () => {
   const crudy = new Crudy<IUser, IUserSearchParams>(
     "http://localhost:8080/user",
