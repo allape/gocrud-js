@@ -8,7 +8,7 @@ const Default = {
 
 export default Default;
 
-export type MutatedTFunction = (key: string, ...args: unknown[]) => void;
+export type MutatedTFunction = (key: string, ...args: unknown[]) => string;
 
 /**
  * ot == Optional Translate
@@ -18,7 +18,7 @@ export function ot(
   defaultValue?: string,
   myT: typeof t = t,
   ...args: unknown[]
-) {
+): string {
   return i18next.isInitialized
     ? (myT as unknown as MutatedTFunction)(key, ...args)
     : defaultValue || key;
