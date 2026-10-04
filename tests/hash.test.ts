@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import { sha256ToHex } from "../";
 
-describe("test upload", () => {
+describe("test hash", () => {
   test("sha256", async () => {
     // echo "12345678" | shasum -a 256
     expect(await sha256ToHex("12345678")).toBe(

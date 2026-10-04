@@ -8,9 +8,18 @@ const Default = {
 
 export default Default;
 
+export type MutatedTFunction = (key: string, ...args: unknown[]) => void;
+
 /**
- * ot == Optional Translate, but no InterpolationMap allowed
+ * ot == Optional Translate
  */
-export function ot(key: string, defaultValue?: string, myT: typeof t = t) {
-  return i18next.isInitialized ? myT(key) : defaultValue || key;
+export function ot(
+  key: string,
+  defaultValue?: string,
+  myT: typeof t = t,
+  ...args: unknown[]
+) {
+  return i18next.isInitialized
+    ? (myT as unknown as MutatedTFunction)(key, ...args)
+    : defaultValue || key;
 }
