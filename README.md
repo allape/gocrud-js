@@ -4,4 +4,4 @@ Client side code for [https://github.com/allape/gocrud](https://github.com/allap
 
 ## Examples
 
-See [crudy.test.ts](tests/crudy.test.ts) and [upload.test.ts](tests/upload.test.ts) for details.
+See [crudy.test.ts](__tests__/crudy.test.ts) and [upload.test.ts](__tests__/upload.test.ts) for details.
