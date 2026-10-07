@@ -1,19 +1,21 @@
 import { describe, expect, test } from "@jest/globals";
-import { upload, sha256ToHex } from "../";
+import { sha256ToHex, upload } from "../";
 
 describe("test upload", () => {
   test("post", async () => {
     const context = `1234abcd_${Math.random()}`;
-    const fullFilename = `/js1/${await sha256ToHex(context)}.txt`;
+    const hash = await sha256ToHex(context);
+    const fakePath = `/js1/${hash}.txt`;
+    const acutalPath = `/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash}.txt`;
     const blob = new Blob([context], { type: "text/plain" });
 
     const savedPath = await upload(
-      `http://localhost:8080/static${fullFilename}`,
+      `http://localhost:8080/static${fakePath}`,
       blob,
     );
-    expect(savedPath).toBe(fullFilename);
+    expect(savedPath).toBe(acutalPath);
 
-    const res = await fetch(`http://localhost:8080/static/${fullFilename}`);
+    const res = await fetch(`http://localhost:8080/static${savedPath}`);
     const text = await res.text();
     expect(text).toBe(context);
   });
