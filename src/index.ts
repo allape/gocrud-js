@@ -123,6 +123,7 @@ export default class Crudy<
     });
   }
 
+  // noinspection JSUnusedGlobalSymbols
   /**
    * @deprecated use {@link all} instead
    */
@@ -145,6 +146,7 @@ export default class Crudy<
     return this.getFunc<T>(`${this.baseUrl}/one/${id}`, config);
   }
 
+  // noinspection JSUnusedGlobalSymbols
   /**
    * @deprecated use {@link page} instead
    */
@@ -173,6 +175,7 @@ export default class Crudy<
     });
   }
 
+  // noinspection JSUnusedGlobalSymbols
   /**
    * @deprecated use {@link count} instead
    */

@@ -7,21 +7,29 @@ test("post", async () => {
   const hash = await sha256ToHex(context);
   const fakePath = `/js1/${hash}.txt`;
   const acutalPath = `/${hash.substring(0, 2)}/${hash.substring(2, 4)}/${hash}.txt`;
-  const blob = new Blob([context], { type: "text/plain" });
 
-  const savedPath = await upload(
-    `http://localhost:8080/static${fakePath}`,
-    blob,
-    undefined,
-    {
-      headers: {
-        [XFileDigestHeader]: hash,
+  // Can not use Blob in test, because jsdom is injecting DOM codes into node,
+  // which will be "[Object Blob]" for fetch func to write request body
+  // const blob = new Blob([context], { type: "text/plain" });
+
+  try {
+    const savedPath = await upload(
+      `http://localhost:8080/static${fakePath}`,
+      context as unknown as File,
+      undefined,
+      {
+        headers: {
+          [XFileDigestHeader]: hash,
+        },
       },
-    },
-  );
-  expect(savedPath).toBe(acutalPath);
+    );
+    expect(savedPath).toBe(acutalPath);
 
-  const res = await fetch(`http://localhost:8080/static${savedPath}`);
-  const text = await res.text();
-  expect(text).toBe(context);
+    const res = await fetch(`http://localhost:8080/static${savedPath}`);
+    const text = await res.text();
+    expect(text).toBe(context);
+  } catch (e) {
+    console.error(e);
+    expect(e).toBeNull();
+  }
 });
