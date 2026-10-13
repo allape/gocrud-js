@@ -8,7 +8,14 @@ const Default = {
 
 export default Default;
 
-export type MutatedTFunction = (key: string, ...args: unknown[]) => string;
+export type TFunc = typeof t;
+export type TFuncArgs = Parameters<TFunc>;
+export type TFuncTailArgs<T extends TFuncArgs = TFuncArgs> = T extends [
+  unknown,
+  ...infer R,
+]
+  ? R
+  : [];
 
 /**
  * ot == Optional Translate
@@ -16,10 +23,8 @@ export type MutatedTFunction = (key: string, ...args: unknown[]) => string;
 export function ot(
   key: string,
   defaultValue?: string,
-  myT: typeof t = t,
-  ...args: unknown[]
+  myT: TFunc = t,
+  ...args: TFuncTailArgs
 ): string {
-  return i18next.isInitialized
-    ? (myT as unknown as MutatedTFunction)(key, ...args)
-    : defaultValue || key;
+  return i18next.isInitialized ? myT(key, ...args) : defaultValue || key;
 }
