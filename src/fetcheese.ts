@@ -66,9 +66,8 @@ export async function fetcheese<T = unknown, D = T>(
     config.retriedCount = (config?.retriedCount || 0) + 1;
     if (config.onError) {
       let errorMessage = stringify(e);
-      errorMessage = config.errorMessageTranslator
-        ? await config.errorMessageTranslator(errorMessage)
-        : errorMessage;
+      errorMessage =
+        (await config.errorMessageTranslator?.(errorMessage)) || errorMessage;
       return config.onError(e, errorMessage);
     }
     throw e;
