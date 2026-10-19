@@ -1,4 +1,5 @@
 import { TFunction } from "i18next";
+import { Promisable, stringify } from "./misc";
 
 export type Headers = Record<string, string>;
 export type URLString = ReturnType<URL["toString"]>;
@@ -23,16 +24,16 @@ export function parseURL(url: string): [URLString, Headers] {
 
 export interface IErrorHandler<T = unknown, D = T> {
   retriedCount?: number;
-  onError?: (e: unknown | Error, parsedMessage: string) => Promise<D> | D;
-  errorMessageTranslator?: (errorMessage: string) => string | Promise<string>;
+  onError?: (e: unknown | Error, parsedMessage: string) => Promisable<D>;
+  errorMessageTranslator?: (errorMessage: string) => Promisable<string>;
 }
 
 export interface IRequestConfig<T = unknown, D = T>
   extends RequestInit, IErrorHandler<T, D> {
-  enableBasicAuth?: boolean;
+  useBasicAuth?: boolean;
   tFunc?: TFunction;
-  onHeadersReceived?: (res: Response) => Promise<void> | void;
-  onDataReceived?: (data: T) => Promise<D> | D;
+  onHeadersReceived?: (res: Response) => Promisable<D | void>;
+  onDataReceived?: (body: T) => Promisable<D>;
 }
 
 export async function fetcheese<T = unknown, D = T>(
@@ -40,7 +41,7 @@ export async function fetcheese<T = unknown, D = T>(
   config: IRequestConfig<T, D> = {},
 ): Promise<D> {
   try {
-    const [u, headers] = config.enableBasicAuth ? parseURL(url) : [url, {}];
+    const [u, headers] = config.useBasicAuth ? parseURL(url) : [url, {}];
 
     const res = await fetch(u, {
       ...config,
@@ -51,7 +52,10 @@ export async function fetcheese<T = unknown, D = T>(
       },
     });
 
-    config.onHeadersReceived?.(res);
+    const earlyEndedData = await config.onHeadersReceived?.(res);
+    if (earlyEndedData) {
+      return earlyEndedData;
+    }
 
     const data: T = await res.json();
 
@@ -69,10 +73,4 @@ export async function fetcheese<T = unknown, D = T>(
     }
     throw e;
   }
-}
-
-export function stringify(err: Error | unknown): string {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  return `${err?.message || err?.m || err?.msg || err}`;
 }

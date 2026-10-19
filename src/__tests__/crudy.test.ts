@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import Crudy, { IResponse, M2MConnectorHandler } from "../index";
+import Crudy, { IResponse } from "../index";
+import { M2MHandler } from '../m2m';
 import { BaseSearchParams, IBase, IBaseSearchParams } from "../model";
 
 interface IUser extends IBase {
@@ -115,7 +116,7 @@ test(
 );
 
 test(
-  "m2m connector handler",
+  "m2m handler",
   {
     concurrent: false,
   },
@@ -129,7 +130,7 @@ test(
       "http://localhost:8080/tag",
     );
 
-    const userTagConnectorHandler = new M2MConnectorHandler<
+    const userTagHandler = new M2MHandler<
       IUser,
       ITag,
       IUserTag
@@ -165,7 +166,7 @@ test(
       name: "tag5",
     });
 
-    const count1 = await userTagConnectorHandler.saveAfterDelete("userId", 1, [
+    const count1 = await userTagHandler.saveAfterDelete("userId", 1, [
       {
         userId: 1,
         tagId: 1,
@@ -181,7 +182,7 @@ test(
     ]);
     expect(count1).toBe(3);
 
-    const count2 = await userTagConnectorHandler.saveAfterDelete("userId", 2, [
+    const count2 = await userTagHandler.saveAfterDelete("userId", 2, [
       {
         userId: 2,
         tagId: 3,
@@ -197,11 +198,11 @@ test(
     ]);
     expect(count2).toBe(3);
 
-    const user1Tags = await userTagConnectorHandler.getAll("userId", [1]);
+    const user1Tags = await userTagHandler.getAll("userId", [1]);
     console.log(user1Tags);
     expect(user1Tags.length).toBe(3);
 
-    const [, , tag3Users] = await userTagConnectorHandler.get<IUser>("tagId", [
+    const [, , tag3Users] = await userTagHandler.get<IUser>("tagId", [
       {
         id: 3,
       } as IUser,
@@ -210,14 +211,14 @@ test(
     expect(Object.keys(tag3Users).length).toBe(1);
     expect(tag3Users[3].length).toBe(2);
 
-    const [, , users] = await userTagConnectorHandler.get<ITag>("userId", [1]);
+    const [, , users] = await userTagHandler.get<ITag>("userId", [1]);
     expect(Object.keys(users).length).toBe(1);
     expect(users[1].length).toBe(3);
 
     const allUsers = await userCrudy.all();
     expect(allUsers.length).toBe(2);
 
-    const [, , tags] = await userTagConnectorHandler.get<ITag>(
+    const [, , tags] = await userTagHandler.get<ITag>(
       "userId",
       allUsers,
       {},
@@ -233,10 +234,10 @@ test(
     expect(allUsers[0]._tags?.length).toBe(3);
     expect(allUsers[1]._tags?.length).toBe(3);
 
-    const count3 = await userTagConnectorHandler.delete(1, 1);
-    expect(count3).toBe(1);
+    const count3 = await userTagHandler.delete(1, 1);
+    expect(count3).toBe(true);
 
-    const allUserTags = await userTagConnectorHandler.getAll("userId", [1, 2]);
+    const allUserTags = await userTagHandler.getAll("userId", [1, 2]);
     expect(allUserTags.length).toBe(5);
   },
 );
