@@ -14,11 +14,12 @@ export interface IBaseSearchParams {
   in_id?: ID[];
   deleted?: boolean;
 
+  orderBy_id?: SortType;
   orderBy_createdAt?: SortType;
   orderBy_updatedAt?: SortType;
   orderBy_deletedAt?: SortType;
-  orderBy_priority?: SortType;
 
+  orderBy_priority?: SortType;
   sortByPriorityThenUpdatedAt?: boolean;
 }
 
